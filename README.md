@@ -6,4 +6,4 @@ Still in development
 
 ## Made on :octocat: GitHub
 
-Game ideas in wiki [here](wiki/Game-Ideas)
+Game ideas in wiki [here](../../wiki/Game-Ideas)
