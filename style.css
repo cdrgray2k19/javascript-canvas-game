@@ -1,0 +1,12 @@
+body {
+    background-color: black;
+    color: white;
+    text-align: center;
+}
+a {
+    color: lightblue;
+}
+canvas {
+    max-width: calc(100vw - 20px);
+    background-color: black;
+}
