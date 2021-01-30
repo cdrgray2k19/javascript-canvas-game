@@ -226,7 +226,7 @@ const glConstants = {
                     srcFormat, srcType, image);
 
       // Power of 2 size means that Mipmap can be used
-      if (maths.isPowerOf2(image.width) && isPowerOf2(image.height)) {
+      if (maths.isPowerOf2(image.width) && maths.isPowerOf2(image.height)) {
         gl.generateMipmap(gl.TEXTURE_2D);
       } else {
         // not a power of 2
