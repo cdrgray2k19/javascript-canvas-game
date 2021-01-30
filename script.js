@@ -2,10 +2,12 @@ function run() {
   console.log(new glFromCanvas(document.querySelector("#glCanvas")));
 }
 
+let cubeRotation;
+
 const maths = {
   isPowerOf2: (value) => { 
     return (value & (value - 1)) == 0; 
-    // No digits in common between n and n-1, so must be like 100 and 011, or 100000 and 011111, so n must be a power of 2.
+    // No digits in common between n and n-1, so must be 100 and 011, or 100000 and 011111 etc., so n must be a power of 2.
   },
 }
 
@@ -241,7 +243,7 @@ const glConstants = {
 
     return texture;
   },
-  drawScene: (gl, programInfo, buffers, texture, rotate = [0, 0, 0], translate = [0, 0, 0]) => {
+  drawScene: (gl, programInfo, buffers, texture, rotate = [0, 0, 0], translate = [-0.0, 0.0, -6.0]) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -469,7 +471,21 @@ function glFromCanvas(canvas, settings={
     // Load texture
     this.texture = glConstants.loadTexture(this.gl, 'cubetexture.png');
 
-    glConstants.drawScene(this.gl, this.shaders.programInfo, this.buffers, this.texture);
+
+    let thisgl = this;
+    var then = 0;
+    cubeRotation = 0;
+
+    // Draw the scene repeatedly
+    function render(now) {
+      cubeRotation += 0.1;
+      now *= 0.001;  // convert to seconds
+      const deltaTime = now - then;
+      then = now;
+      glConstants.drawScene(thisgl.gl, thisgl.shaders.programInfo, thisgl.buffers, thisgl.texture, [cubeRotation*0.5, cubeRotation*1.0, cubeRotation*1.5]);
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
   }
   catch(err) {
     this.error = err;
