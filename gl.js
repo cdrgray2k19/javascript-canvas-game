@@ -243,7 +243,7 @@ const glConstants = {
 
     return texture;
   },
-  drawScene: (gl, programInfo, buffers, texture, rotate = [0, 0, 0], translate = [-0.0, 0.0, -6.0]) => {
+  drawBuffers: (gl, programInfo, buffers, texture, rotate = [0, 0, 0], translate = [-0.0, 0.0, -6.0]) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -275,7 +275,7 @@ const glConstants = {
                   modelViewMatrix,     // matrix to translate
                   translate);  // amount to translate
 
-    mat4.rotate(modelViewMatrix, modelViewMatrix, 0.7, rotate);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rotate[0], rotate[1]);
     
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
@@ -471,7 +471,6 @@ function glFromCanvas(canvas, settings={
     // Load texture
     this.texture = glConstants.loadTexture(this.gl, 'cubetexture.png');
 
-
     let thisgl = this;
     var then = 0;
     cubeRotation = 0;
@@ -482,7 +481,7 @@ function glFromCanvas(canvas, settings={
       now *= 0.001;  // convert to seconds
       const deltaTime = now - then;
       then = now;
-      glConstants.drawScene(thisgl.gl, thisgl.shaders.programInfo, thisgl.buffers, thisgl.texture, [cubeRotation*0.5, cubeRotation*1.0, cubeRotation*1.5]);
+      glConstants.drawBuffers(thisgl.gl, thisgl.shaders.programInfo, thisgl.buffers, thisgl.texture, [cubeRotation * 0.1, [0.5, 1.0, 1.5]]);
       requestAnimationFrame(render);
     }
     requestAnimationFrame(render);
@@ -492,3 +491,120 @@ function glFromCanvas(canvas, settings={
   }
 }
 window.onload = run;
+
+const shapes = {
+  Cuboid: function(x, y, z, width, height, depth) {
+    this.positions = [
+      x, y,  z+depth,
+      x+width, y,  z+depth,
+      x+width,  y+height,  z+depth,
+      x,  y+height,  z+depth,
+    
+      // Back face
+      x, y, z,
+      x,  y+height, z,
+      x+width,  y+height, z,
+      x+width, y, z,
+    
+      // Top face
+      x,  y+height, z,
+      x,  y+height,  z+depth,
+      x+width,  y+height,  z+depth,
+      x+width,  y+height, z,
+    
+      // Bottom face
+      x, y, z,
+       x+width, y, z,
+       x+width, y,  z+depth,
+      x, y,  y+height,
+    
+      // Right face
+       x+width, y, z,
+       x+width,  y+height, z,
+       x+width,  y+height,  z+depth,
+       x+width, y,  z+depth,
+    
+      // Left face
+      x, y, z,
+      x, y,  z+depth,
+      x,  y+height,  z+depth,
+      x,  y+height, z,
+    ]; 
+    this.textureCoordinates = [
+      // Front
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Back
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Top
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Bottom
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Right
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Left
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+    ]; 
+    this.indices = [
+      0,  1,  2,      0,  2,  3,    // front
+      4,  5,  6,      4,  6,  7,    // back
+      8,  9,  10,     8,  10, 11,   // top
+      12, 13, 14,     12, 14, 15,   // bottom
+      16, 17, 18,     16, 18, 19,   // right
+      20, 21, 22,     20, 22, 23,   // left
+    ]; 
+    this.vertexNormals = [
+      // Front
+      x+(width/2),  y+(height/2),  z+depth,
+      x+(width/2),  y+(height/2),  z+depth,
+      x+(width/2),  y+(height/2),  z+depth,
+      x+(width/2),  y+(height/2),  z+depth,
+  
+      // Back
+      x+(width/2),  y+(height/2), z,
+      x+(width/2),  y+(height/2), z,
+      x+(width/2),  y+(height/2), z,
+      x+(width/2),  y+(height/2), z,
+  
+      // Top
+      x+(width/2),  y+height,  z+(depth/2),
+      x+(width/2),  y+height,  z+(depth/2),
+      x+(width/2),  y+height,  z+(depth/2),
+      x+(width/2),  y+height,  z+(depth/2),
+  
+      // Bottom
+      x+(width/2), y,  z+(depth/2),
+      x+(width/2), y,  z+(depth/2),
+      x+(width/2), y,  z+(depth/2),
+      x+(width/2), y,  z+(depth/2),
+  
+      // Right
+      x+width,  y+(height/2),  z+(depth/2),
+      x+width,  y+(height/2),  z+(depth/2),
+      x+width,  y+(height/2),  z+(depth/2),
+      x+width,  y+(height/2),  z+(depth/2),
+  
+      // Left
+      x,  y+(height/2),  z+(depth/2),
+      x,  y+(height/2),  z+(depth/2),
+      x,  y+(height/2),  z+(depth/2),
+      x,  y+(height/2),  z+(depth/2)]
+  },
+}
