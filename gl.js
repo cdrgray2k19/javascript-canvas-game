@@ -1,9 +1,3 @@
-function run() {
-  console.log(new glFromCanvas(document.querySelector("#glCanvas")));
-}
-
-let cubeRotation;
-
 const maths = {
   isPowerOf2: (value) => { 
     return (value & (value - 1)) == 0; 
@@ -243,8 +237,8 @@ const glConstants = {
 
     return texture;
   },
-  drawBuffers: (gl, programInfo, buffers, texture, rotate = [0, 0, 0], translate = [-0.0, 0.0, -6.0]) => {
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
+  clearScreen(gl, color) {
+    gl.clearColor(...color);  // Clear to black, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -252,6 +246,8 @@ const glConstants = {
     // Clear the canvas before we start drawing on it.
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  },
+  drawBuffers: (gl, programInfo, buffers, vLength, texture, rotate = [0.0, [0, 0, 0], [0, 0, 0]], translate = [-0.0, 0.0, -6.0]) => {
 
     // Create a perspective matrix
 
@@ -270,13 +266,17 @@ const glConstants = {
     // Set the drawing position to the "identity" point, which is
     // the center of the scene.
     const modelViewMatrix = mat4.create();
-
+    
     mat4.translate(modelViewMatrix,     // destination matrix
                   modelViewMatrix,     // matrix to translate
                   translate);  // amount to translate
-
-    mat4.rotate(modelViewMatrix, modelViewMatrix, rotate[0], rotate[1]);
     
+
+    mat4.translate(modelViewMatrix, modelViewMatrix, [rotate[2][0], rotate[2][1], rotate[2][2]]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rotate[0], rotate[1]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-rotate[2][0], -rotate[2][1], -rotate[2][2]]);
+
+
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
     {
@@ -368,14 +368,14 @@ const glConstants = {
     // Tell the shader we bound the texture to texture unit 0
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
     
-    {
+    /*{
       const offset = 0;
       const vertexCount = 4;
       gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
-    }
+    }*/
 
     {
-      const vertexCount = 36;
+      const vertexCount = vLength;
       const type = gl.UNSIGNED_SHORT;
       const offset = 0;
       gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
@@ -383,7 +383,7 @@ const glConstants = {
   },
 }
 
-function glFromCanvas(canvas, settings={
+function glFromCanvas(canvas, onload, settings={
   lighting: {
     ambient: [0.3, 0.3, 0.3],
     directional: [1, 1, 1],
@@ -459,38 +459,59 @@ function glFromCanvas(canvas, settings={
     }
 
     this.bufferData = { // Use defaults
-      positions: undefined,
-      textureCoordinates: undefined,
-      indices: undefined,
-      vertexNormals: undefined,
+      positions: [],
+      textureCoordinates: [],
+      indices: [],
+      vertexNormals: [],
     }
 
-    //Load buffers (vertices and colour data)
-    this.buffers = glConstants.initBuffers(this.gl, this.bufferData.positions, this.bufferData.textureCoordinates, this.bufferData.indices, this.bufferData.vertexNormals);
+    this.loaded = true;
 
-    // Load texture
-    this.texture = glConstants.loadTexture(this.gl, 'cubetexture.png');
+    this.do = {
+      clearBuffers: function(thisgl) {
+        thisgl.bufferData = { // Use defaults
+          positions: [],
+          textureCoordinates: [],
+          indices: [],
+          vertexNormals: [],
+        };
+        this.buffers = undefined;
+      },
 
-    let thisgl = this;
-    var then = 0;
-    cubeRotation = 0;
+      addShape: function(thisgl, shape) {
+        let soFar = thisgl.bufferData.positions.length;
+        thisgl.bufferData.positions.push(...shape.positions);
+        thisgl.bufferData.textureCoordinates.push(...shape.textureCoordinates);
+        thisgl.bufferData.vertexNormals.push(...shape.vertexNormals);
+        let tempIndices = [];
+        shape.indices.forEach(function(item) {
+          tempIndices.push(item+soFar);
+        });
+        thisgl.bufferData.indices.push(...tempIndices);
+      },
 
-    // Draw the scene repeatedly
-    function render(now) {
-      cubeRotation += 0.1;
-      now *= 0.001;  // convert to seconds
-      const deltaTime = now - then;
-      then = now;
-      glConstants.drawBuffers(thisgl.gl, thisgl.shaders.programInfo, thisgl.buffers, thisgl.texture, [cubeRotation * 0.1, [0.5, 1.0, 1.5]]);
-      requestAnimationFrame(render);
+      loadBuffers: function(thisgl) {
+        thisgl.bufferData.vertexLength = thisgl.bufferData.indices.length;
+        thisgl.buffers = glConstants.initBuffers(thisgl.gl, thisgl.bufferData.positions, thisgl.bufferData.textureCoordinates, thisgl.bufferData.indices, thisgl.bufferData.vertexNormals);
+      },
+
+      loadTexture: function(thisgl, filename) {
+        thisgl.texture = glConstants.loadTexture(thisgl.gl, filename);
+      },
+      draw: function(thisgl, rotate=[0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], translate=[-0.0, 0.0, -6.0]) {
+        glConstants.drawBuffers(thisgl.gl, thisgl.shaders.programInfo, thisgl.buffers, thisgl.bufferData.vertexLength, thisgl.texture, rotate, translate);
+      },
+      clearScreen(thisgl, color=[0.0, 0.0, 0.0, 1.0]) { // solid black
+        glConstants.clearScreen(thisgl.gl, color);
+      },
     }
-    requestAnimationFrame(render);
+
+    onload(this);
   }
   catch(err) {
     this.error = err;
   }
 }
-window.onload = run;
 
 const shapes = {
   Cuboid: function(x, y, z, width, height, depth) {
