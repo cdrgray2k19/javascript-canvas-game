@@ -8,14 +8,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Big+Shoulders+Display&family=Fira+Mono&family=Major+Mono+Display&family=Nova+Square&family=Press+Start+2P&family=Space+Mono&display=swap" rel="stylesheet">
 </head>
-<body style="font-family: monospace;">
+<body style="font-family: monospace; background-color: black; color: white;">
+    <div style="background-color: inherit; top: 0; position: sticky;">
     <label for="select1">Font: </label>
     <select id="select1" onchange="document.body.style.fontFamily = this.value;">
         <option value="monospace" style="font-family: monospace">
             monospace
         </option>
         <option value="'Audiowide'" style="font-family: 'Audiowide'">
-            'Audiowide'
+            'Audiowide' - Chosen
         </option>
         <option value="'Big Shoulders Display'" style="font-family: 'Big Shoulders Display'">
             'Big Shoulders Display'
@@ -37,9 +38,10 @@
         </option>
     </select><br/>
     <label for="select2">Text Colour: </label>
-    <input id="select2" type="color" onchange="document.body.style.color = this.value;" value="#000000"/>
+    <input id="select2" type="color" onchange="document.body.style.color = this.value;" value="#ffffff"/>
     <label for="select3">Background Colour: </label>
-    <input id="select3" type="color" onchange="document.body.style.backgroundColor = this.value;" value="#ffffff"/>
+    <input id="select3" type="color" onchange="document.body.style.backgroundColor = this.value;" value="#000000"/>
+    </div>
     <div id="text">
         <h1>Some text</h1>
         <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Explicabo nihil odit incidunt corrupti id perferendis, placeat est sunt voluptates voluptatibus et debitis itaque praesentium, dolor deleniti voluptas aliquid possimus iusto exercitationem modi reprehenderit consectetur cumque consequuntur. Quas, voluptas tempora laudantium quibusdam aliquid optio nisi. Quos debitis accusantium esse repellendus. Iusto at fuga sequi eaque in. Eveniet necessitatibus ipsum, est temporibus officiis tempora assumenda laboriosam, corrupti maxime deleniti accusamus eligendi minus molestiae molestias itaque reprehenderit dignissimos quam! Culpa laboriosam placeat necessitatibus error nemo, quos voluptas repudiandae aperiam qui omnis temporibus suscipit repellendus sapiente quam? Debitis, possimus neque suscipit qui, cupiditate totam, eum voluptatum commodi consequuntur quibusdam ut consectetur dolores. Magnam dolorum ipsam placeat quae, rem atque dolorem nemo pariatur, esse saepe eaque reprehenderit voluptatibus minus, ducimus culpa quisquam modi ut eveniet repellat. Unde ea enim quae laudantium aperiam molestias quis nesciunt officiis, placeat obcaecati, labore suscipit. Reprehenderit exercitationem maiores veniam quia doloremque quibusdam sed nemo atque consequatur assumenda ipsum, vitae aperiam a voluptas laudantium autem consequuntur iusto molestias labore eius libero mollitia eaque veritatis. Ipsam at enim atque suscipit quia corporis blanditiis, magnam nesciunt nam neque ducimus aspernatur maxime voluptatibus minus, porro odit fuga! Quidem quam labore odit impedit non quibusdam!</p>
