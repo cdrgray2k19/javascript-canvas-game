@@ -1,12 +1,12 @@
-var game, blocks, blockA;
+var game, blocks;
 function run() {
 
     let map = [
-        " ##",
+        " ###",
+        "###",
         "##",
         "#"].join("\n");
     console.log(map);
-    blockA = new FallingBlock(Math.floor(Math.random() * 7), 0, 3, 3, map, "orange");
 
     game = { // Main game mechanics, including timing
         lastFrame: 0, // Changes to keep time logged
@@ -46,19 +46,30 @@ function run() {
             ctx.lineWidth = 2;
             blocks.drawGrid();
 
-            if(blockA.y < (15 - blockA.height)) {
-                blockA.y += sinceLastFrame / 100;
+            fBlock = blocks.fallingBlock.current;
+
+            if(fBlock.y < (15 - fBlock.height)) {
+                fBlock.y += sinceLastFrame / 100;
             } else {
-                blockA.x = Math.floor(Math.random() * (11 - blockA.width));
-                blockA.y = -blockA.height;
-                blockA.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
+                fBlock.x = Math.floor(Math.random() * (11 - fBlock.width));
+                fBlock.y = -fBlock.height;
+                fBlock.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
             }
-            blockA.draw();
+            fBlock.draw();
 
             /* New frame */
             if(game.playing) requestAnimationFrame(game.frame); // Built-in function - only new frame if game is playing
         },
+        keyPressed: function(e) { // e is event
+            if(e.keyCode === 39) { // Right key pressed - see https://keycode.info/
+                blocks.fallingBlock.current.rotate(true); // clockwise
+            } else if(e.keyCode === 37) { // Left key pressed
+                blocks.fallingBlock.current.rotate(false); // anti-clockwise
+            }
+        },
     };
+
+    window.addEventListener("keydown", game.keyPressed); // Set game.keyPressed as default key down function - keypress event does not support arrow keys
 
     blocks = {
         originX: 10,
@@ -82,77 +93,99 @@ function run() {
                     game.c.ctx.strokeRect(blocks.originX + (x * blocks.blockSize), blocks.originY + (y * blocks.blockSize), blocks.blockSize, blocks.blockSize); // stroke / outline rectangle
                 }
             }
+        },
+
+        fallingBlock: {
+            New: function(x, y, width, height, map, color) { // constructor
+                /* Get map array from human-readable string */
+                let array = [];
+                let rows = map.split("\n"); // every line, \n means new line
+                for(let i = 0; i < rows.length; i++) { // look through each row (y coordinate)
+                    let row = rows[i].split(""); // get blocks in row
+                    let rowArray = []; // row array
+                    for(let i = 0; i < row.length; i++) { // for each block / character
+                        rowArray.push(row[i] == "#"); // true if character is '#'; else false
+                    }
+                    array.push(rowArray); // add row to main array
+                }
+            
+                this.map = array; // save map array
+                this.x = x; // save x
+                this.y = y; // save y
+                this.width = width; // save width
+                this.height = height; // save height
+                this.color = color; // save colour
+            
+                this.draw = function() { // draw on grid
+                    game.c.ctx.fillStyle = this.color; // set colour for drawing
+                    originX = this.x; // top-left corner
+                    originY = this.y; // top-left corner
+                    for(let y = 0; y < this.map.length; y++) { // for every row (y-coordinate)
+                        let row = this.map[y]; // get row
+                        for(let x = 0; x < row.length; x++) { // for every building block
+                            if(row[x]) game.c.ctx.fillRect(...blocks.getCoords(originX + x, originY + y, 1, 1)); // if is block in map, use spread syntax to turn array returned into args; relative to origin
+                        }
+                    }
+                }
+            
+                this.rotate = function(clockwise) { // clockwise parameter is a boolean value
+                    let prevMap = this.map; // previous map
+                    let newMap = [];
+
+                    let h = this.width;
+                    this.width = this.height;
+                    this.height = h;
+
+                    /* Create blank array of falses */
+                    for(let y = 0; y < this.height; y++) {
+                        let row = [];
+                        for(let x = 0; x < this.height; x++) {
+                            row.push(false);
+                        }
+                        newMap.push(row)
+                    }
+            
+                    if(!clockwise) {
+                        // not clockwise - Anti-clockwise - reverse rows **before** transpose
+
+                        for(let y = 0; y < prevMap.length; y++) {
+                            while(prevMap[y].length < this.width) {
+                                prevMap[y].push(false); // Make all arrays same size so rotating works
+                            }
+                            prevMap[y].reverse(); // reverse rows
+                        }
+
+                    }
+            
+                    for(let y = 0; y < prevMap.length; y++) { // for every row
+                        let row = prevMap[y]
+                        for(let x = 0; x < row.length; x++) { // for every block
+                            //transpose - see https://en.wikipedia.org/wiki/Transpose and https://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
+                            newMap[x][y] = row[x];
+                        }
+                    }
+                    
+                    if(clockwise) {
+                        /* Clockwise - reverse rows **after** transpose */
+                        
+                        for(let y = 0; y < newMap.length; y++) {
+                            newMap[y].reverse(); // reverse rows
+                        }
+            
+                    }
+            
+                    this.map = newMap;
+                }
+            },
+            current: undefined, // current falling block
         }
     }
+
+    /* Init falling block */
+    blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, 4, map, "orange");
 
     requestAnimationFrame(game.frame);
 
-}
-
-FallingBlock = function(x, y, width, height, map, color) {
-    /* Get map array from human-readable string */
-    let array = [];
-    let rows = map.split("\n"); // every line, \n means new line
-    for(let i = 0; i < rows.length; i++) { // look through each row (y coordinate)
-        let row = rows[i].split(""); // get blocks in row
-        let rowArray = []; // row array
-        for(let i = 0; i < row.length; i++) { // for each block / character
-            rowArray.push(row[i] == "#"); // true if character is '#'; else false
-        }
-        array.push(rowArray); // add row to main array
-    }
-
-    this.map = array; // save map array
-    this.x = x; // save x
-    this.y = y; // save y
-    this.width = width; // save width
-    this.height = height; // save height
-    this.color = color; // save colour
-
-    this.draw = function() { // draw on grid
-        game.c.ctx.fillStyle = this.color; // set colour for drawing
-        originX = this.x; // top-left corner
-        originY = this.y; // top-left corner
-        for(let y = 0; y < this.map.length; y++) { // for every row (y-coordinate)
-            let row = this.map[y]; // get row
-            for(let x = 0; x < row.length; x++) { // for every building block
-                if(row[x]) game.c.ctx.fillRect(...blocks.getCoords(originX + x, originY + y, 1, 1)); // if is block in map, use spread syntax to turn array returned into args; relative to origin
-            }
-        }
-    }
-
-    this.rotate = function(clockwise) { // clockwise parameter is a boolean value
-        let prevMap = this.map; // previous map
-        let newMap = [];
-        /* Create blank array of falses */
-        for(let y = 0; y < this.height; y++) {
-            let row = [];
-            for(let x = 0; x < this.height; x++) {
-                row.push(false);
-            }
-            newMap.push(row)
-        }
-
-        for(let y = 0; y < prevMap.length; y++) { // for every row
-            let row = prevMap[y]
-            for(let x = 0; x < row.length; x++) { // for every block
-                //transpose - see https://en.wikipedia.org/wiki/Transpose and https://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
-                newMap[x][y] = row[x];
-            }
-        }
-        if(clockwise) {
-            /* Clockwise - reverse rows */
-            
-            for(let y = 0; y < newMap.length; y++) {
-                newMap[y].reverse(); // reverse rows
-            }
-
-        } else {
-            /* Anti-clockwise */
-        }
-
-        this.map = newMap;
-    }
 }
 
 window.onload = run;
