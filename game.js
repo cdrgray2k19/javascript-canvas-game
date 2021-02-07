@@ -1,4 +1,8 @@
-var game, blocks;
+/* -----------Debug---------------- */
+//setInterval(eval, 1000, "console.log(blocks.fallingBlock.current)");
+/* -------------------------------- */
+
+var game, blocks, body;
 function run() {
 
     let map = [
@@ -42,19 +46,22 @@ function run() {
             ctx.fillText("FPS: " + game.fps, game.c.width - 10, 30, game.c.width/2 - 20);
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
 
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = "#888888";
             ctx.lineWidth = 2;
-            blocks.drawGrid();
+            body.drawGrid();
+
+            body.draw(); // draw static blocks
 
             fBlock = blocks.fallingBlock.current;
 
-            if(fBlock.y < (15 - fBlock.height)) {
+            if(fBlock.y < (15 - fBlock.size)) {
                 fBlock.y += sinceLastFrame / 100;
             } else {
-                fBlock.x = Math.floor(Math.random() * (11 - fBlock.width));
-                fBlock.y = -fBlock.height;
+                fBlock.x = Math.floor(Math.random() * (11 - fBlock.size));
+                fBlock.y = -fBlock.size;
                 fBlock.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
             }
+            
             fBlock.draw();
 
             /* New frame */
@@ -90,18 +97,10 @@ function run() {
             return [x, y, width, height]; // return array that can be expanded into fillRect function using '...' spread syntax (see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax)
         },
 
-        drawGrid: function() {
-            /* For every coordinate */
-            for(let y = 0; y < blocks.gridH; y++) {
-                for(let x = 0; x < blocks.gridW; x++) {
-                    game.c.ctx.strokeRect(blocks.originX + (x * blocks.blockSize), blocks.originY + (y * blocks.blockSize), blocks.blockSize, blocks.blockSize); // stroke / outline rectangle
-                }
-            }
-        },
-
         fallingBlock: {
-            New: function(x, y, width, height, map, color) { // constructor
+            New: function(x, y, size, map, color) { // constructor
                 /* Get map array from human-readable string */
+
                 let array = [];
                 let rows = map.split("\n"); // every line, \n means new line
                 for(let i = 0; i < rows.length; i++) { // look through each row (y coordinate)
@@ -114,10 +113,11 @@ function run() {
                 }
             
                 this.map = array; // save map array
+
                 this.x = x; // save x
                 this.y = y; // save y
-                this.width = width; // save width
-                this.height = height; // save height
+
+                this.size = size; // save size
                 this.color = color; // save colour
             
                 this.draw = function() { // draw on grid
@@ -136,24 +136,20 @@ function run() {
                     let prevMap = this.map; // previous map
                     let newMap = [];
 
-                    let h = this.width;
-                    this.width = this.height;
-                    this.height = h;
-
                     /* Create blank array of falses */
-                    for(let y = 0; y < this.height; y++) {
+                    for(let y = 0; y < this.size; y++) {
                         let row = [];
-                        for(let x = 0; x < this.height; x++) {
+                        for(let x = 0; x < this.size; x++) {
                             row.push(false);
                         }
-                        newMap.push(row)
+                        newMap.push(row);
                     }
             
                     if(!clockwise) {
                         // not clockwise - Anti-clockwise - reverse rows **before** transpose
 
                         for(let y = 0; y < prevMap.length; y++) {
-                            while(prevMap[y].length < this.width) {
+                            while(prevMap[y].length < this.size) {
                                 prevMap[y].push(false); // Make all arrays same size so rotating works
                             }
                             prevMap[y].reverse(); // reverse rows
@@ -168,7 +164,7 @@ function run() {
                             newMap[x][y] = row[x];
                         }
                     }
-                    
+                                        
                     if(clockwise) {
                         /* Clockwise - reverse rows **after** transpose */
                         
@@ -184,7 +180,7 @@ function run() {
                 this.move = function(direction){ //moves the piece left or right
                     if (direction){ //moving left
                         if(this.x == 0){ // to make sure you don't move off the board
-                            console.log('left-most')
+                            //left
                         }else{
                             this.x -= 1; // moves the piece one block to the left
                         }
@@ -192,7 +188,7 @@ function run() {
 
                     if (!direction) { // moving right
                         if(this.x == 6){ // to make sure you don't move off the board
-                            console.log('right-most')
+                            //right
                         }else{
                             this.x += 1; // moves the piece one block to the right
                         }
@@ -203,11 +199,91 @@ function run() {
         }
     }
 
+	body = {
+      	height: 15,
+      	width: 10,
+      	map: [],
+      	texturePalette: [],
+      	drawGrid: function() {
+            /* For every coordinate */
+            for(let y = 0; y < body.height; y++) {
+                for(let x = 0; x < body.width; x++) {
+                    game.c.ctx.strokeRect(blocks.originX + (x * blocks.blockSize), blocks.originY + (y * blocks.blockSize), blocks.blockSize, blocks.blockSize); // stroke / outline rectangle
+                }
+            }
+        },
+    	addToBody: function(block) { // block is the falling block
+        	textureIndex = body.texturePalette.push(block.color) - 1; // palette array - -1 means index of last value - returns final length
+          	for(let y = 0; y < block.map.length; y++) {
+                  let row = block.map[y]; 
+            	for(let x = 0; x < row.length; x++) {
+                    //going through coordinates relative to block
+              		if(row[x]) {
+                		body.map[y+Math.floor(block.y), x+Math.floor(block.x)] = textureIndex; // Math.floor ensures answer is whole number
+              		} else {
+                		body.map[y+Math.floor(block.y), Math.floor(x+block.x)] = 0;
+              		}
+                      //console.log(y+Math.floor(block.y), x+Math.floor(block.x));
+          		}
+        	}
+		return true;
+    	},
+		draw: function() {
+            for(let y = 0; y < body.height; y++) {
+                for(let x = 0; x < body.width; x++) {
+                    if(body.texturePalette != 0) { // if there is a colour
+                        game.c.ctx.fillStyle = (body.texturePalette[body.map[y][x]]); // find colour index, then get colour from index
+                        game.c.ctx.fillRect(...blocks.getCoords(x, y));
+                    }
+                }
+            }
+        }
+	}
+
+    /* Create a blank map */
+    for(let y = 0; y < body.height; y++) {
+        let row = [];
+    	for(let x = 0; x < body.width; x++) {
+
+            row.push(0);
+		
+		}
+        body.map.push(row);
+    }
+
+	
+
     /* Init falling block */
-    blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, 4, map, "orange");
+    blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
 
     requestAnimationFrame(game.frame);
 
 }
 
 window.onload = run;
+/*
+
+function addToBody(block) {
+  textureIndex = body.textures.push(block.color) - 1; // palette array
+  for(let y = 0; y < block.map.length; y++) {
+    for(let x = 0; x < block.map.length; x++) {
+      if(block.map[y][x]) {
+        body.textures[x+block.x, y+block.y] = textureIndex;
+      } else {
+        body.textures[x+block.x, y+block.y] = 0;
+      }
+  }
+}
+
+function drawBody() {
+  for(let y = 0; y < body.height; y++) {
+    for(let x = 0; x < body.width; x++) {
+      if(body.textures != 0) {
+        game.fillStyle = (body.textures[body.map[y][x]);
+        game.fillRect(...blocks.getCoords(x, y));
+      }
+    }
+  }
+}
+
+ */
