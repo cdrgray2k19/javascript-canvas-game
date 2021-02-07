@@ -65,6 +65,10 @@ function run() {
                 blocks.fallingBlock.current.rotate(true); // clockwise
             } else if(e.keyCode === 37) { // Left key pressed
                 blocks.fallingBlock.current.rotate(false); // anti-clockwise
+            } else if (e.keyCode === 65) { // a pressed
+                blocks.fallingBlock.current.move(true); //move the block to the left
+            } else if (e.keyCode === 68) { //d pressed
+                blocks.fallingBlock.current.move(false); //move the block to the right
             }
         },
     };
@@ -175,6 +179,24 @@ function run() {
                     }
             
                     this.map = newMap;
+                }
+
+                this.move = function(direction){ //moves the piece left or right
+                    if (direction){ //moving left
+                        if(this.x == 0){ // to make sure you don't move off the board
+                            console.log('left-most')
+                        }else{
+                            this.x -= 1; // moves the piece one block to the left
+                        }
+                    }
+
+                    if (!direction) { // moving right
+                        if(this.x == 6){ // to make sure you don't move off the board
+                            console.log('right-most')
+                        }else{
+                            this.x += 1; // moves the piece one block to the right
+                        }
+                    }
                 }
             },
             current: undefined, // current falling block
