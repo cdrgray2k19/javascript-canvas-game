@@ -46,23 +46,33 @@ function run() {
             ctx.fillText("FPS: " + game.fps, game.c.width - 10, 30, game.c.width/2 - 20);
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
 
-            ctx.strokeStyle = "#888888";
-            ctx.lineWidth = 2;
-            body.drawGrid();
 
-            body.draw(); // draw static blocks
+            body.draw();// draw static blocks
 
             fBlock = blocks.fallingBlock.current;
+			const play = true;
 
-            if(fBlock.y < (15 - fBlock.size)) {
-                fBlock.y += sinceLastFrame / 100;
-            } else {
-                fBlock.x = Math.floor(Math.random() * (11 - fBlock.size));
+			if(body.checkCollision(fBlock, sinceLastFrame)){
+				const play = body.addToBody(fBlock);
+				blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
+				fBlock = blocks.fallingBlock.current
+				fBlock.x = Math.floor(Math.random() * (11 - fBlock.size));
                 fBlock.y = -fBlock.size;
                 fBlock.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
-            }
+			}else{
+				fBlock.y += sinceLastFrame / 100;
+			}
+			
+
+			ctx.strokeStyle = "#888888";
+            ctx.lineWidth = 2;
+            body.drawGrid();
             
             fBlock.draw();
+
+			if (!play){
+				game.playing = false;
+			}
 
             /* New frame */
             if(game.playing) requestAnimationFrame(game.frame); // Built-in function - only new frame if game is playing
@@ -127,7 +137,9 @@ function run() {
                     for(let y = 0; y < this.map.length; y++) { // for every row (y-coordinate)
                         let row = this.map[y]; // get row
                         for(let x = 0; x < row.length; x++) { // for every building block
-                            if(row[x]) game.c.ctx.fillRect(...blocks.getCoords(originX + x, originY + y, 1, 1)); // if is block in map, use spread syntax to turn array returned into args; relative to origin
+                            if(row[x]){
+								game.c.ctx.fillRect(...blocks.getCoords(originX + x, originY + y, 1, 1)); // if is block in map, use spread syntax to turn array returned into args; relative to origin
+							}
                         }
                     }
                 }
@@ -213,31 +225,61 @@ function run() {
             }
         },
     	addToBody: function(block) { // block is the falling block
-        	textureIndex = body.texturePalette.push(block.color) - 1; // palette array - -1 means index of last value - returns final length
+        	textureIndex = body.texturePalette.push(block.color);// palette array - -1 means index of last value - returns final length
           	for(let y = 0; y < block.map.length; y++) {
                   let row = block.map[y]; 
             	for(let x = 0; x < row.length; x++) {
                     //going through coordinates relative to block
-              		if(row[x]) {
-                		body.map[y+Math.floor(block.y), x+Math.floor(block.x)] = textureIndex; // Math.floor ensures answer is whole number
-              		} else {
-                		body.map[y+Math.floor(block.y), Math.floor(x+block.x)] = 0;
+              		if(row[x]){
+                		try{
+							body.map[y+Math.floor(block.y)][x+Math.floor(block.x)] = textureIndex - 1; // Math.floor ensures answer is whole number
+						}catch{
+							game.playing = false;
+						}
               		}
-                      //console.log(y+Math.floor(block.y), x+Math.floor(block.x));
           		}
         	}
-		return true;
     	},
 		draw: function() {
             for(let y = 0; y < body.height; y++) {
                 for(let x = 0; x < body.width; x++) {
-                    if(body.texturePalette != 0) { // if there is a colour
+                    if(body.map[y][x] != 0) { // if there is a colour
                         game.c.ctx.fillStyle = (body.texturePalette[body.map[y][x]]); // find colour index, then get colour from index
-                        game.c.ctx.fillRect(...blocks.getCoords(x, y));
-                    }
+						game.c.ctx.fillRect(...blocks.getCoords(x, y, 1, 1));
+					}
                 }
             }
-        }
+        },
+	
+		checkCollision: function(block, sinceLastFrame){
+			if (block.y >= (15 - block.size)){ // return true if hit bottom
+				return true;
+			}
+			
+			var tempY = block.y; // set temporary value for block Y then increment and check if there are any squares in the body that overlap with the new block position
+
+			tempY += sinceLastFrame / 100;
+
+			for(let y = 0; y < block.map.length; y++) { // for every row (y-coordinate)
+                let row = block.map[y]; // get row
+                    for(let x = 0; x < row.length; x++) { // for every building block
+                        if(row[x]){
+							if(row[x]){
+									if (y + tempY >= 0){
+										if (body.map[y+Math.round(tempY)][x+Math.round(block.x)] != 0){ // Math.floor ensures answer is whole number
+											return true;
+										}
+									} else {
+										if (body.map[0][x] != 0){
+											game.playing = false;
+										}
+									}
+              				}
+						}
+					}
+			};
+			return false;
+		},
 	}
 
     /* Create a blank map */
@@ -251,6 +293,7 @@ function run() {
         body.map.push(row);
     }
 
+	body.texturePalette.push("black");
 	
 
     /* Init falling block */
@@ -261,29 +304,3 @@ function run() {
 }
 
 window.onload = run;
-/*
-
-function addToBody(block) {
-  textureIndex = body.textures.push(block.color) - 1; // palette array
-  for(let y = 0; y < block.map.length; y++) {
-    for(let x = 0; x < block.map.length; x++) {
-      if(block.map[y][x]) {
-        body.textures[x+block.x, y+block.y] = textureIndex;
-      } else {
-        body.textures[x+block.x, y+block.y] = 0;
-      }
-  }
-}
-
-function drawBody() {
-  for(let y = 0; y < body.height; y++) {
-    for(let x = 0; x < body.width; x++) {
-      if(body.textures != 0) {
-        game.fillStyle = (body.textures[body.map[y][x]);
-        game.fillRect(...blocks.getCoords(x, y));
-      }
-    }
-  }
-}
-
- */
