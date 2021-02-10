@@ -47,6 +47,10 @@ function run() {
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
 
 
+            ctx.strokeStyle = "#888888";
+            ctx.lineWidth = 2;
+            body.drawGrid();
+
             body.draw();// draw static blocks
 
             fBlock = blocks.fallingBlock.current;
@@ -62,11 +66,6 @@ function run() {
 			}else{
 				fBlock.y += sinceLastFrame / 100;
 			}
-			
-
-			ctx.strokeStyle = "#888888";
-            ctx.lineWidth = 2;
-            body.drawGrid();
             
             fBlock.draw();
 
@@ -215,7 +214,7 @@ function run() {
       	height: 15,
       	width: 10,
       	map: [],
-      	texturePalette: [],
+      	texturePalette: ["transparent"],
       	drawGrid: function() {
             /* For every coordinate */
             for(let y = 0; y < body.height; y++) {
@@ -264,17 +263,15 @@ function run() {
                 let row = block.map[y]; // get row
                     for(let x = 0; x < row.length; x++) { // for every building block
                         if(row[x]){
-							if(row[x]){
-									if (y + tempY >= 0){
-										if (body.map[y+Math.round(tempY)][x+Math.round(block.x)] != 0){ // Math.floor ensures answer is whole number
-											return true;
-										}
-									} else {
-										if (body.map[0][x] != 0){
-											game.playing = false;
-										}
-									}
-              				}
+                            if (y + tempY >= 0){
+                                if (body.map[y+Math.round(tempY)][x+Math.round(block.x)] != 0){ // Math.floor ensures answer is whole number
+                                    return true;
+                                }
+                            } else {
+                                if (body.map[0][x] != 0){
+                                    game.playing = false;
+                                }
+                            }
 						}
 					}
 			};
@@ -292,9 +289,6 @@ function run() {
 		}
         body.map.push(row);
     }
-
-	body.texturePalette.push("black");
-	
 
     /* Init falling block */
     blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
