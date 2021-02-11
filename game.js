@@ -272,7 +272,7 @@ function run() {
         },
 	
 		checkCollision: function(block, sinceLastFrame){
-			if (block.y >= (15 - block.size)){ // return true if hit bottom
+			if (block.y >= (body.height - block.size)){ // return true if hit bottom
 				return true;
 			}
 			
