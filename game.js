@@ -16,6 +16,7 @@ function run() {
         lastFrame: 0, // Changes to keep time logged
         frameCount: 0,
         secondCount: 0,
+		score: 0,
         playing: true,
         c: { //canvas
             canvas: document.querySelector("#gameCanvas"),
@@ -45,33 +46,31 @@ function run() {
             ctx.textAlign = "right";
             ctx.fillText("FPS: " + game.fps, game.c.width - 10, 30, game.c.width/2 - 20);
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
+			ctx.fillText("Score :" + game.score, game.c.width - 10, 90, game.c.width/2 - 20)
 
-
-            ctx.strokeStyle = "#888888";
-            ctx.lineWidth = 2;
-            body.drawGrid();
 
             body.draw();// draw static blocks
 
             fBlock = blocks.fallingBlock.current;
-			const play = true;
 
 			if(body.checkCollision(fBlock, sinceLastFrame)){
-				const play = body.addToBody(fBlock);
+				body.addToBody(fBlock);
 				blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
 				fBlock = blocks.fallingBlock.current
+				game.score += 1;
 				fBlock.x = Math.floor(Math.random() * (11 - fBlock.size));
                 fBlock.y = -fBlock.size;
                 fBlock.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
 			}else{
 				fBlock.y += sinceLastFrame / 100;
 			}
+			
+
+			ctx.strokeStyle = "#888888";
+            ctx.lineWidth = 2;
+            body.drawGrid();
             
             fBlock.draw();
-
-			if (!play){
-				game.playing = false;
-			}
 
             /* New frame */
             if(game.playing) requestAnimationFrame(game.frame); // Built-in function - only new frame if game is playing
@@ -174,8 +173,8 @@ function run() {
                             //transpose - see https://en.wikipedia.org/wiki/Transpose and https://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
                             newMap[x][y] = row[x];
                         }
-                    }
-                                        
+					}
+					
                     if(clockwise) {
                         /* Clockwise - reverse rows **after** transpose */
                         
@@ -185,7 +184,11 @@ function run() {
             
                     }
             
-                    this.map = newMap;
+                    if (this.isLegal(newMap)){
+						this.map = newMap
+					} else{
+						console.log('illegal')
+					}
                 }
 
                 this.move = function(direction){ //moves the piece left or right
@@ -205,6 +208,24 @@ function run() {
                         }
                     }
                 }
+				this.isLegal = function(m){
+					for(let y = 0; y < m.length; y++) {
+                        let row = m[y]
+                        for(let x = 0; x < row.length; x++) {
+							if (row[x]){
+								try{
+									if (body.map[y+Math.ceil(block.y)][x+Math.ceil(block.x)] != 0){
+										return false;
+									}
+								}catch{
+
+								}
+							}
+                        }
+                    }
+					return true;
+				}
+
             },
             current: undefined, // current falling block
         }
@@ -214,7 +235,7 @@ function run() {
       	height: 15,
       	width: 10,
       	map: [],
-      	texturePalette: ["transparent"],
+      	texturePalette: [],
       	drawGrid: function() {
             /* For every coordinate */
             for(let y = 0; y < body.height; y++) {
@@ -262,17 +283,22 @@ function run() {
 			for(let y = 0; y < block.map.length; y++) { // for every row (y-coordinate)
                 let row = block.map[y]; // get row
                     for(let x = 0; x < row.length; x++) { // for every building block
-                        if(row[x]){
-                            if (y + tempY >= 0){
-                                if (body.map[y+Math.round(tempY)][x+Math.round(block.x)] != 0){ // Math.floor ensures answer is whole number
-                                    return true;
-                                }
-                            } else {
-                                if (body.map[0][x] != 0){
-                                    game.playing = false;
-                                }
-                            }
-						}
+						if(row[x]){
+							if (y + Math.floor(tempY) >= 0){
+								try{
+									if (body.map[y+Math.floor(tempY)][x+Math.floor(block.x)] != 0){ // Math.floor ensures answer is whole number
+										return true;
+									}
+								}catch{
+
+								}
+							} else {
+								if (body.map[0][x] != 0){
+									console.log('end')
+									game.playing = false;
+								}
+							}
+              			}
 					}
 			};
 			return false;
@@ -289,6 +315,9 @@ function run() {
 		}
         body.map.push(row);
     }
+
+	body.texturePalette.push("black");
+	
 
     /* Init falling block */
     blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
