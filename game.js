@@ -48,6 +48,10 @@ function run() {
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
 			ctx.fillText("Score :" + game.score, game.c.width - 10, 90, game.c.width/2 - 20)
 
+            
+            ctx.strokeStyle = "#888888";
+            ctx.lineWidth = 2;
+            body.drawGrid();
 
             body.draw();// draw static blocks
 
@@ -64,11 +68,6 @@ function run() {
 			}else{
 				fBlock.y += sinceLastFrame / 100;
 			}
-			
-
-			ctx.strokeStyle = "#888888";
-            ctx.lineWidth = 2;
-            body.drawGrid();
             
             fBlock.draw();
 
@@ -316,7 +315,7 @@ function run() {
         body.map.push(row);
     }
 
-	body.texturePalette.push("black");
+	body.texturePalette.push("transparent");
 	
 
     /* Init falling block */
