@@ -79,6 +79,8 @@ function run(){
 			ctx.strokeStyle = "#888888";
             ctx.lineWidth = 1;
             body.drawGrid();
+
+            game.clearRow(body.map);
 			
 			if(game.playing){
 				requestAnimationFrame(game.frame);
@@ -149,6 +151,25 @@ function run(){
                 blocks.fallingBlock.current.move(false); //move the block to the right
             }
         },
+		clearRow: function(map){ //multiply points by 2 if a row is fully filled
+			for (let y = 0; y < 15; y++){//gets the map of the body and scans each row
+				let row = map[y];
+				let isAllEmpty = false;
+				isAllEmpty = row.every(item => item !== 0);
+				if (isAllEmpty == true){
+					console.log("not empty");
+					for(let z = 0; z < row.length;z++){ //destroys the row and sets it all to 0
+						row[z] = 0;
+					};
+					game.score = game.score * 2;
+					for (let v = y; v > 0; v--){
+						console.log(map[v]);
+						map[v] = map[v-1];
+					}
+				}
+			}
+
+		}
     };
 	window.addEventListener("keydown", game.keyPressed);
 
