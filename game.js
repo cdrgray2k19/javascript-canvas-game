@@ -152,7 +152,7 @@ function run(){
             }
         },
 		clearRow: function(map){ //multiply points by 2 if a row is fully filled
-			for (let y = 0; y < 15; y++){//gets the map of the body and scans each row
+			for (let y = 0; y < map.length; y++){//gets the map of the body and scans each row
 				let row = map[y];
 				let isAllEmpty = false;
 				isAllEmpty = row.every(item => item !== 0);
@@ -161,7 +161,7 @@ function run(){
 					for(let z = 0; z < row.length;z++){ //destroys the row and sets it all to 0
 						row[z] = 0;
 					};
-					game.score = game.score * 2;
+					game.score += blocks.gridW;
 					for (let v = y; v > 0; v--){
 						console.log(map[v]);
 						map[v] = map[v-1];
