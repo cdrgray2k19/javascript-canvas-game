@@ -1,20 +1,55 @@
-/* -----------Debug---------------- */
-//setInterval(eval, 1000, "console.log(blocks.fallingBlock.current)");
-/* -------------------------------- */
+var body, game, blocks;
 
-var game, blocks, body;
-function run() {
-
-    let map = [
+function run(){
+	/*let map = [
         " ###",
         "###",
         "##",
         "#"].join("\n");
-    console.log(map);
+    console.log(map);*/
+
+	const shapeMaps = [
+		[
+			"#",
+			"#",
+			"#",
+			"#"
+		].join("\n"),
+		[
+			"#",
+			"###",
+			""
+		].join("\n"),
+		[
+			"  #",
+			"###",
+			""
+		].join("\n"),
+		[
+			"##",
+			"##"
+		].join("\n"),
+		[
+			" ##",
+			"##",
+			""
+		].join("\n"),
+		[
+			" #",
+			"###",
+			""
+		].join("\n"),
+		[
+			"##",
+			" ##",
+			""
+		].join("\n")
+	];
+	const shapeSizes = [4, 3, 3, 2, 3, 3, 3];
+
+	const shapeColours = ['cyan', 'blue', 'orange', 'yellow', 'green', 'magenta', 'red']
 
     game = { // Main game mechanics, including timing
-        lastFrame: 0, // Changes to keep time logged
-        frameCount: 0,
         secondCount: 0,
 		score: 0,
         playing: true,
@@ -24,57 +59,86 @@ function run() {
             height: 500,
             ctx: document.querySelector("#gameCanvas").getContext("2d"),
         },
-        frame: function(thisFrame) { // main game frame function called by the browser repeatedly while playing
-
-            /* Frames and time managing */
-            const sinceLastFrame = thisFrame - game.lastFrame; // Store time in ms since last Frame
-            game.lastFrame = thisFrame; // Save new Frame
-
-            ctx = game.c.ctx;
-            
-            /* Regular code executed every n frames */
-            if(game.frameCount % 50 == 0) {
-                //Every 1 second
-                game.fps = Math.trunc(1000 / sinceLastFrame);
-            }
-            game.frameCount++;
-            game.secondCount += sinceLastFrame / 1000;
-
-            ctx.clearRect(0, 0, game.c.width, game.c.height);
+		frame: function() {
+			ctx = game.c.ctx;
+			ctx.clearRect(0, 0, game.c.width, game.c.height);
             ctx.fillStyle = "lightblue";
             ctx.font = "20px Audiowide";
             ctx.textAlign = "right";
-            ctx.fillText("FPS: " + game.fps, game.c.width - 10, 30, game.c.width/2 - 20);
             ctx.fillText("Seconds: " + Math.trunc(game.secondCount), game.c.width - 10, 60, game.c.width/2 - 20);
 			ctx.fillText("Score :" + game.score, game.c.width - 10, 90, game.c.width/2 - 20)
+		
+			//carry out collision and append newmap to current map or append map to body and create new falling block
 
             
-            ctx.strokeStyle = "#888888";
-            ctx.lineWidth = 2;
+			body.draw();
+
+			fBlock = blocks.fallingBlock.current;
+			fBlock.draw();
+
+			ctx.strokeStyle = "#888888";
+            ctx.lineWidth = 1;
             body.drawGrid();
-
-            body.draw();// draw static blocks
-
-            fBlock = blocks.fallingBlock.current;
-
-			if(body.checkCollision(fBlock, sinceLastFrame)){
-				body.addToBody(fBlock);
-				blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
-				fBlock = blocks.fallingBlock.current
-				game.score += 1;
-				fBlock.x = Math.floor(Math.random() * (11 - fBlock.size));
-                fBlock.y = -fBlock.size;
-                fBlock.color = "rgb("  + (Math.floor(Math.random() * 155) + 100) + ", " + (Math.floor(Math.random() * 155) + 100) + ", "  + (Math.floor(Math.random() * 155) + 100) +  ")"; // rgb random values between 100 and 255
+			
+			if(game.playing){
+				requestAnimationFrame(game.frame);
 			}else{
-				fBlock.y += sinceLastFrame / 100;
+				clearInterval(drop);
 			}
-            
-            fBlock.draw();
 
-            /* New frame */
-            if(game.playing) requestAnimationFrame(game.frame); // Built-in function - only new frame if game is playing
-        },
-        keyPressed: function(e) { // e is event
+		},
+		fall: function(){
+			fBlock = blocks.fallingBlock.current;
+			fBlock.newY += 1;
+			if (game.check(fBlock.map, fBlock, fBlock.newY, fBlock.x) == false){
+				fBlock.y = fBlock.newY;
+			} else{
+				fBlock.newY = fBlock.y;
+				body.addToBody(fBlock);
+				game.newBlock();
+			}
+			game.secondCount += dropWaitTime / 1000;
+		},
+
+		check: function(blockMap, block, blockY, blockX){//takes body and block map and allows to choose whether we test the new y and x values of the falling block if we so choose
+		//this means with this function we can test either rotation collision, y move collision, and x move collision by altering the parameters given.
+			for (let y = 0; y < blockMap.length; y++){
+				let row = blockMap[y];
+				for (let x = 0; x < row.length; x++){
+					if (row[x]){
+						try{
+							if (body.map[y + blockY][x + blockX] != 0){
+								return true;
+							}
+						}catch{
+							if (y + (blockY) >= blocks.gridH){
+								return true;
+							}else if (x + (blockX) >= blocks.gridW){
+								return true;
+							} else if (x + (blockX) < 0){
+								return true;
+							} else{
+								//block is above the canvas and has just spawned in so we will just let this error catch pass as it is a completely expected result
+							}
+						}
+					}
+				}
+			}
+			return false;
+		},
+
+		newBlock: function(){
+			let index = Math.floor(Math.random() * (shapeMaps.length))
+			let map = shapeMaps[index];
+			let size = shapeSizes[index];
+			let color = shapeColours[index];
+			let x = Math.floor(Math.random() * (7));
+			let y = -size
+			blocks.fallingBlock.current = new blocks.fallingBlock.New(x, y, size, map, color);
+			game.score += 1;
+		},
+	
+		keyPressed: function(e) { // e is event
             if(e.keyCode === 39) { // Right key pressed - see https://keycode.info/
                 blocks.fallingBlock.current.rotate(true); // clockwise
             } else if(e.keyCode === 37) { // Left key pressed
@@ -86,10 +150,9 @@ function run() {
             }
         },
     };
+	window.addEventListener("keydown", game.keyPressed);
 
-    window.addEventListener("keydown", game.keyPressed); // Set game.keyPressed as default key down function - keypress event does not support arrow keys
-
-    blocks = {
+	blocks = {
         originX: 10,
         originY: 10,
         gridW: 10, // grid width in blocks
@@ -120,9 +183,12 @@ function run() {
                 }
             
                 this.map = array; // save map array
+				this.newMap = [];
 
                 this.x = x; // save x
                 this.y = y; // save y
+				this.newX = this.x;
+				this.newY = this.y;
 
                 this.size = size; // save size
                 this.color = color; // save colour
@@ -142,8 +208,8 @@ function run() {
                 }
             
                 this.rotate = function(clockwise) { // clockwise parameter is a boolean value
-                    let prevMap = this.map; // previous map
-                    let newMap = [];
+					let prevMap = this.map; // previous map 
+					let newMap = [];
 
                     /* Create blank array of falses */
                     for(let y = 0; y < this.size; y++) {
@@ -173,62 +239,39 @@ function run() {
                             newMap[x][y] = row[x];
                         }
 					}
-					
+
                     if(clockwise) {
                         /* Clockwise - reverse rows **after** transpose */
-                        
                         for(let y = 0; y < newMap.length; y++) {
                             newMap[y].reverse(); // reverse rows
                         }
             
                     }
-            
-                    if (this.isLegal(newMap)){
-						this.map = newMap
-					} else{
-						console.log('illegal')
+
+					if (game.check(newMap, this, this.y, this.x) == false){
+						this.map = newMap;
+					} else {
 					}
                 }
 
                 this.move = function(direction){ //moves the piece left or right
-                    if (direction){ //moving left
-                        if(this.x == 0){ // to make sure you don't move off the board
-                            //left
-                        }else{
-                            this.x -= 1; // moves the piece one block to the left
-                        }
+					if (direction){ //moving left
+                        this.newX -= 1; // moves the piece one block to the left
                     }
 
                     if (!direction) { // moving right
-                        if(this.x == 6){ // to make sure you don't move off the board
-                            //right
-                        }else{
-                            this.x += 1; // moves the piece one block to the right
-                        }
+                        this.newX += 1; // moves the piece one block to the right
                     }
-                }
-				this.isLegal = function(m){
-					for(let y = 0; y < m.length; y++) {
-                        let row = m[y]
-                        for(let x = 0; x < row.length; x++) {
-							if (row[x]){
-								try{
-									if (body.map[y+Math.ceil(block.y)][x+Math.ceil(block.x)] != 0){
-										return false;
-									}
-								}catch{
-
-								}
-							}
-                        }
-                    }
-					return true;
+					if (game.check(this.map, this, this.y, this.newX) == false){
+						this.x = this.newX;
+					} else {
+						this.newX = this.x;
+					}
 				}
-
-            },
+			},
             current: undefined, // current falling block
         }
-    }
+    };
 
 	body = {
       	height: 15,
@@ -269,48 +312,13 @@ function run() {
                 }
             }
         },
-	
-		checkCollision: function(block, sinceLastFrame){
-			if (block.y >= (body.height - block.size)){ // return true if hit bottom
-				return true;
-			}
-			
-			var tempY = block.y; // set temporary value for block Y then increment and check if there are any squares in the body that overlap with the new block position
-
-			tempY += sinceLastFrame / 100;
-
-			for(let y = 0; y < block.map.length; y++) { // for every row (y-coordinate)
-                let row = block.map[y]; // get row
-                    for(let x = 0; x < row.length; x++) { // for every building block
-						if(row[x]){
-							if (y + Math.floor(tempY) >= 0){
-								try{
-									if (body.map[y+Math.floor(tempY)][x+Math.floor(block.x)] != 0){ // Math.floor ensures answer is whole number
-										return true;
-									}
-								}catch{
-
-								}
-							} else {
-								if (body.map[0][x] != 0){
-									console.log('end')
-									game.playing = false;
-								}
-							}
-              			}
-					}
-			};
-			return false;
-		},
 	}
 
     /* Create a blank map */
     for(let y = 0; y < body.height; y++) {
         let row = [];
     	for(let x = 0; x < body.width; x++) {
-
             row.push(0);
-		
 		}
         body.map.push(row);
     }
@@ -319,10 +327,17 @@ function run() {
 	
 
     /* Init falling block */
-    blocks.fallingBlock.current = new blocks.fallingBlock.New(Math.floor(Math.random() * 7), 0, 4, map, "orange");
 
-    requestAnimationFrame(game.frame);
+    game.newBlock();
 
+
+	
+	
+	
+	
+	requestAnimationFrame(game.frame);
+	const dropWaitTime = 500;
+	const drop = setInterval(game.fall, dropWaitTime);
 }
 
 window.onload = run;
